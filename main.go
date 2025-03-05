@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/MdSadiqMd/Scrape404/package/middleware"
+	"github.com/MdSadiqMd/Scrape404/package/utils"
 	"github.com/fatih/color"
 	"github.com/go-chi/chi/v5"
 	"github.com/gocolly/colly/v2"
@@ -57,37 +58,12 @@ func startServer(port string) {
 		w.Write([]byte("Dead Link Checker API"))
 	})
 	r.Route("/api", func(r chi.Router) {
-		r.Get("/check", handleCheckURL)
-		r.Post("/check", handleSubmitURL)
+		r.Get("/check", utils.HandleCheckURL)
+		r.Post("/check", utils.HandleSubmitURL)
 	})
 
 	fmt.Printf("Starting server on port %s...\n", port)
 	http.ListenAndServe(":"+port, r)
-}
-
-func handleCheckURL(w http.ResponseWriter, r *http.Request) {
-	url := r.URL.Query().Get("url")
-	if url == "" {
-		http.Error(w, "Missing URL parameter", http.StatusBadRequest)
-		return
-	}
-
-	fmt.Fprintf(w, "Starting scan for URL: %s", url)
-}
-
-func handleSubmitURL(w http.ResponseWriter, r *http.Request) {
-	if err := r.ParseForm(); err != nil {
-		http.Error(w, "Failed to parse form", http.StatusBadRequest)
-		return
-	}
-
-	url := r.FormValue("url")
-	if url == "" {
-		http.Error(w, "Missing URL parameter", http.StatusBadRequest)
-		return
-	}
-
-	fmt.Fprintf(w, "Submitted URL for scanning: %s", url)
 }
 
 func scrapeWebsite(urlStr string, maxDepth, delayMs, parallelism, timeoutSec int, userAgent string) {
@@ -149,7 +125,7 @@ func scrapeWebsite(urlStr string, maxDepth, delayMs, parallelism, timeoutSec int
 		}
 	})
 
-	// Save the current page 
+	// Save the current page
 	c.OnRequest(func(r *colly.Request) {
 		mu.Lock()
 		currentPage = r.URL.String()
