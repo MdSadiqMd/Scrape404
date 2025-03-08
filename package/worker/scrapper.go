@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/MdSadiqMd/Scrape404/package/types"
+	"github.com/MdSadiqMd/Scrape404/package/utils"
 	"github.com/fatih/color"
 	"github.com/gocolly/colly"
 )
@@ -21,7 +22,7 @@ func ScrapeWebsite(urlStr string, maxDepth, delayMs, parallelism, timeoutSec int
 	infoColor.Printf("Starting scan for: %s\n", urlStr)
 	infoColor.Printf("Max depth: %d, Delay: %dms, Parallel workers: %d\n\n", maxDepth, delayMs, parallelism)
 
-	baseURL, err := parseURL(urlStr)
+	baseURL, err := utils.ParseURL(urlStr)
 	if err != nil {
 		errorColor.Printf("Error parsing URL: %s\n", err)
 		return
@@ -95,8 +96,8 @@ func ScrapeWebsite(urlStr string, maxDepth, delayMs, parallelism, timeoutSec int
 			return
 		}
 		visitedLinks[link] = true
-		checkLink(link, currentPage, "link", &deadLinks, infoColor, successColor, errorColor)
-		if sameHost(link, urlStr) {
+		utils.CheckLink(link, currentPage, "link", &deadLinks, infoColor, successColor, errorColor)
+		if utils.SameHost(link, urlStr) {
 			e.Request.Visit(link)
 		}
 	})
@@ -114,7 +115,7 @@ func ScrapeWebsite(urlStr string, maxDepth, delayMs, parallelism, timeoutSec int
 			return
 		}
 		visitedLinks[imgSrc] = true
-		checkLink(imgSrc, currentPage, "image", &deadLinks, infoColor, successColor, errorColor)
+		utils.CheckLink(imgSrc, currentPage, "image", &deadLinks, infoColor, successColor, errorColor)
 	})
 
 	c.OnHTML("video source[src], video[src], iframe[src]", func(e *colly.HTMLElement) {
@@ -135,7 +136,7 @@ func ScrapeWebsite(urlStr string, maxDepth, delayMs, parallelism, timeoutSec int
 		if strings.Contains(e.Name, "iframe") {
 			mediaType = "iframe"
 		}
-		checkLink(videoSrc, currentPage, mediaType, &deadLinks, infoColor, successColor, errorColor)
+		utils.CheckLink(videoSrc, currentPage, mediaType, &deadLinks, infoColor, successColor, errorColor)
 	})
 
 	c.OnHTML("link[href], script[src]", func(e *colly.HTMLElement) {
@@ -158,7 +159,7 @@ func ScrapeWebsite(urlStr string, maxDepth, delayMs, parallelism, timeoutSec int
 			return
 		}
 		visitedLinks[resourceSrc] = true
-		checkLink(resourceSrc, currentPage, resourceType, &deadLinks, infoColor, successColor, errorColor)
+		utils.CheckLink(resourceSrc, currentPage, resourceType, &deadLinks, infoColor, successColor, errorColor)
 	})
 
 	// Start crawling
@@ -166,5 +167,5 @@ func ScrapeWebsite(urlStr string, maxDepth, delayMs, parallelism, timeoutSec int
 	c.Wait()
 
 	totalTime := time.Since(startTime).Round(time.Second)
-	printResults(deadLinks, visitedLinks, visitedPages, totalTime, titleColor, errorColor)
+	utils.PrintResults(deadLinks, visitedLinks, visitedPages, totalTime, titleColor, errorColor)
 }
