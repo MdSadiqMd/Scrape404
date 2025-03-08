@@ -3,14 +3,10 @@ package main
 import (
 	"flag"
 	"fmt"
-	"log/slog"
-	"net/http"
 	"os"
 
-	"github.com/MdSadiqMd/Scrape404/package/middleware"
-	"github.com/MdSadiqMd/Scrape404/package/utils"
+	"github.com/MdSadiqMd/Scrape404/package/server"
 	"github.com/MdSadiqMd/Scrape404/package/worker"
-	"github.com/go-chi/chi/v5"
 )
 
 func main() {
@@ -23,7 +19,7 @@ func main() {
 	portFlag := flag.String("port", "8080", "Port to run the HTTP server on")
 	flag.Parse()
 
-	go startServer(*portFlag)
+	go server.StartServer(*portFlag)
 
 	if *urlFlag == "" {
 		fmt.Println("Please provide a URL to scrape with --url flag")
@@ -32,23 +28,4 @@ func main() {
 	}
 
 	worker.ScrapeWebsite(*urlFlag, *depthFlag, *delayFlag, *parallelismFlag, *timeoutFlag, *userAgentFlag)
-}
-
-func startServer(port string) {
-	r := chi.NewRouter()
-
-	logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
-	r.Use(middleware.Logging(logger))
-	r.Use(middleware.NoCache)
-
-	r.Get("/", func(w http.ResponseWriter, r *http.Request) {
-		w.Write([]byte("Dead Link Checker API"))
-	})
-	r.Route("/api", func(r chi.Router) {
-		r.Get("/check", utils.HandleCheckURL)
-		r.Post("/check", utils.HandleSubmitURL)
-	})
-
-	fmt.Printf("Starting server on port %s...\n", port)
-	http.ListenAndServe(":"+port, r)
 }
