@@ -1,36 +1,39 @@
 package main
 
 import (
-	"flag"
+	"bufio"
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/MdSadiqMd/Scrape404/package/server"
+	"github.com/MdSadiqMd/Scrape404/package/utils"
 	"github.com/MdSadiqMd/Scrape404/package/worker"
 )
 
 func main() {
-	urlFlag := flag.String("url", "", "URL to scrape for dead links")
-	depthFlag := flag.Int("depth", 5, "Maximum crawl depth (default: 5)")
-	delayFlag := flag.Int("delay", 1000, "Delay between requests in milliseconds (default: 1000)")
-	parallelismFlag := flag.Int("parallel", 2, "Number of parallel scrapers (default: 2)")
-	timeoutFlag := flag.Int("timeout", 30, "Request timeout in seconds (default: 30)")
-	userAgentFlag := flag.String("user-agent", "DeadLinkChecker/1.0", "User agent to use for requests")
-	portFlag := flag.String("port", "8080", "Port to run the HTTP server on")
-	usePlaywrightFlag := flag.Bool("js", false, "Use Playwright to handle JavaScript-enabled websites")
-	flag.Parse()
+	scanner := bufio.NewScanner(os.Stdin)
 
-	go server.StartServer(*portFlag)
-
-	if *urlFlag == "" {
-		fmt.Println("Please provide a URL to scrape with --url flag")
-		flag.Usage()
+	url := utils.PromptString(scanner, "Enter URL to scrape for dead links", "")
+	if url == "" {
+		fmt.Println("Error: URL cannot be empty")
 		os.Exit(1)
 	}
 
-	if *usePlaywrightFlag {
-		worker.ScrapeWithPlaywright(*urlFlag, *depthFlag, *delayFlag, *parallelismFlag, *timeoutFlag, *userAgentFlag)
+	depth := utils.PromptInt(scanner, "Enter maximum crawl depth", 5)
+	delay := utils.PromptInt(scanner, "Enter delay between requests in milliseconds", 1000)
+	parallel := utils.PromptInt(scanner, "Enter number of parallel scrapers", 2)
+	timeout := utils.PromptInt(scanner, "Enter request timeout in seconds", 30)
+	userAgent := utils.PromptString(scanner, "Enter user agent", "DeadLinkChecker/1.0")
+	port := utils.PromptString(scanner, "Enter port for HTTP server", "8080")
+	jsInput := utils.PromptString(scanner, "Use Playwright for JavaScript-enabled websites? (y/n)", "n")
+	usePlaywright := strings.ToLower(jsInput) == "y" || strings.ToLower(jsInput) == "yes"
+
+	go server.StartServer(port)
+
+	if usePlaywright {
+		worker.ScrapeWithPlaywright(url, depth, delay, parallel, timeout, userAgent)
 	} else {
-		worker.ScrapeWebsite(*urlFlag, *depthFlag, *delayFlag, *parallelismFlag, *timeoutFlag, *userAgentFlag)
+		worker.ScrapeWebsite(url, depth, delay, parallel, timeout, userAgent)
 	}
 }
